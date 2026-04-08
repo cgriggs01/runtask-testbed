@@ -1,0 +1,30 @@
+name: Automated Mock TFC Run Task
+
+on:
+  repository_dispatch:
+    types: [tfc_mock_event]
+
+jobs:
+  send_callback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send status to Terraform Cloud
+        run: |
+          echo "Received payload from TFC via middleware."
+          echo "Executing automated callback with status: ${{ github.event.client_payload.task_status }}"
+          
+          curl -X PATCH "${{ github.event.client_payload.callback_url }}" \
+            -H "Authorization: Bearer ${{ github.event.client_payload.access_token }}" \
+            -H "Content-Type: application/vnd.api+json" \
+            -d '{
+              "data": {
+                "type": "task-results",
+                "attributes": {
+                  "status": "${{ github.event.client_payload.task_status }}",
+                  "message": "Automated run task executed successfully."
+                }
+              }
+            }'
+            
+      - name: Confirm Execution
+        run: echo "Automated callback sent successfully."
